@@ -45,9 +45,7 @@ void CameraDetector::runDemo() {
 
         auto detections = detector.detect(frame);
         auto tracks = tracker.update(detections, 1.0f);
-        auto radarDetections = radarSimulator.simulate(
-            std::vector<Track>{}
-        );
+
 
         // Convert KalmanTrack -> Track for current fusion code
         std::vector<Track> basicTracks;
@@ -63,11 +61,14 @@ void CameraDetector::runDemo() {
             basicTracks.push_back(t);
         }
 
-        radarDetections = radarSimulator.simulate(basicTracks);
+        auto radarDetections = radarSimulator.simulate(basicTracks);
         auto fusedTracks = fusionManager.fuse(basicTracks, radarDetections);
 
         // Draw Kalman camera tracks
         for (const auto& track : tracks) {
+            if (track.age < 5)
+                continue;
+            
             cv::rectangle(frame, track.bbox, cv::Scalar(0, 255, 0), 2);
 
             // Raw measurement in green

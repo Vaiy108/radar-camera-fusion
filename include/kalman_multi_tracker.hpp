@@ -6,7 +6,7 @@
 
 class KalmanMultiTracker {
 public:
-    KalmanMultiTracker(float maxMatchDistance = 70.0f, int maxMissedFrames = 10);
+    KalmanMultiTracker(float maxMatchDistance = 100.0f, int maxMissedFrames = 10);
 
     std::vector<KalmanTrack> update(const std::vector<Detection>& detections, float dt);
 

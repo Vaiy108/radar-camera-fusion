@@ -2,7 +2,7 @@
 
 MotionDetector::MotionDetector()
     : bgSubtractor_(cv::createBackgroundSubtractorMOG2()),
-      minArea_(800) {
+      minArea_(4500) {
 }
 
 std::vector<Detection> MotionDetector::detect(const cv::Mat& frame) {
@@ -33,6 +33,9 @@ std::vector<Detection> MotionDetector::detect(const cv::Mat& frame) {
         }
 
         cv::Rect bbox = cv::boundingRect(contour);
+        // Filter tiny width/height
+        if (bbox.width < 30 || bbox.height < 30)
+            continue;
         cv::Point2f center(
             bbox.x + bbox.width * 0.5f,
             bbox.y + bbox.height * 0.5f
@@ -40,6 +43,15 @@ std::vector<Detection> MotionDetector::detect(const cv::Mat& frame) {
 
         detections.push_back({bbox, center, area});
     }
+    // Keep only largest detections
+    std::sort(detections.begin(), detections.end(),
+              [](const Detection& a, const Detection& b) {
+                return a.area > b.area;
+          });
+
+    if (detections.size() > 5) {
+        detections.resize(5);
+}
 
     return detections;
 }
