@@ -1,0 +1,20 @@
+#pragma once
+
+#include <vector>
+#include "detection_types.hpp"
+#include "kalman_track.hpp"
+
+class KalmanMultiTracker {
+public:
+    KalmanMultiTracker(float maxMatchDistance = 70.0f, int maxMissedFrames = 10);
+
+    std::vector<KalmanTrack> update(const std::vector<Detection>& detections, float dt);
+
+private:
+    float distance(const cv::Point2f& a, const cv::Point2f& b) const;
+
+    float maxMatchDistance_;
+    int maxMissedFrames_;
+    int nextTrackId_;
+    std::vector<KalmanTrack> tracks_;
+};

@@ -1,6 +1,6 @@
 #include "camera_detector.hpp"
 #include "motion_detector.hpp"
-#include "simple_tracker.hpp"
+#include "kalman_multi_tracker.hpp"
 #include "radar_simulator.hpp"
 #include "fusion_manager.hpp"
 #include <iostream>
@@ -31,7 +31,7 @@ void CameraDetector::runDemo() {
     }
 
     MotionDetector detector;
-    SimpleTracker tracker;
+    KalmanMultiTracker tracker;
     RadarSimulator radarSimulator;
     FusionManager fusionManager;
 
@@ -44,53 +44,80 @@ void CameraDetector::runDemo() {
         }
 
         auto detections = detector.detect(frame);
-        auto tracks = tracker.update(detections);
-        auto radarDetections = radarSimulator.simulate(tracks);
-        auto fusedTracks = fusionManager.fuse(tracks, radarDetections);
+        auto tracks = tracker.update(detections, 1.0f);
+        auto radarDetections = radarSimulator.simulate(
+            std::vector<Track>{}
+        );
 
-        // Draw camera tracks
+        // Convert KalmanTrack -> Track for current fusion code
+        std::vector<Track> basicTracks;
+        basicTracks.reserve(tracks.size());
+
+        for (const auto& kt : tracks) {
+            Track t;
+            t.id = kt.id;
+            t.bbox = kt.bbox;
+            t.center = kt.filteredCenter;
+            t.age = kt.age;
+            t.missedFrames = kt.missedFrames;
+            basicTracks.push_back(t);
+        }
+
+        radarDetections = radarSimulator.simulate(basicTracks);
+        auto fusedTracks = fusionManager.fuse(basicTracks, radarDetections);
+
+        // Draw Kalman camera tracks
         for (const auto& track : tracks) {
             cv::rectangle(frame, track.bbox, cv::Scalar(0, 255, 0), 2);
-            cv::circle(frame, track.center, 4, cv::Scalar(0, 255, 0), -1);
 
-            std::string label = "Cam ID " + std::to_string(track.id);
+            // Raw measurement in green
+            cv::circle(frame, track.measuredCenter, 4, cv::Scalar(0, 255, 0), -1);
+
+            // Filtered position in yellow
+            cv::circle(frame, track.filteredCenter, 6, cv::Scalar(0, 255, 255), -1);
+
+            // Velocity vector in magenta
+            cv::Point2f endPoint = track.filteredCenter + track.velocity * 2.0f;
+            cv::line(frame, track.filteredCenter, endPoint, cv::Scalar(255, 0, 255), 2);
+
+            std::string label = "KF ID " + std::to_string(track.id);
             cv::putText(frame, label,
                         cv::Point(track.bbox.x, track.bbox.y - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.6,
                         cv::Scalar(0, 255, 0), 2);
+
+            std::string meta = "vx=" + std::to_string(static_cast<int>(track.velocity.x)) +
+                               " vy=" + std::to_string(static_cast<int>(track.velocity.y));
+            cv::putText(frame, meta,
+                        cv::Point(track.bbox.x, track.bbox.y + track.bbox.height + 18),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.45,
+                        cv::Scalar(255, 255, 0), 1);
         }
 
         // Draw radar detections
         for (const auto& rd : radarDetections) {
             cv::circle(frame, rd.position, 6, cv::Scalar(255, 0, 0), 2);
-
-            std::string label = "Radar";
-            cv::putText(frame, label,
-                        cv::Point(static_cast<int>(rd.position.x) + 8,
-                                  static_cast<int>(rd.position.y) - 8),
+            cv::putText(frame, "Radar",
+                        cv::Point(static_cast<int>(rd.position.x) + 6,
+                                  static_cast<int>(rd.position.y) - 6),
                         cv::FONT_HERSHEY_SIMPLEX, 0.45,
                         cv::Scalar(255, 0, 0), 1);
         }
 
-        // Draw fused tracks
+        // Draw fused points
         for (const auto& fused : fusedTracks) {
-            cv::circle(frame, fused.fusedPosition, 6, cv::Scalar(0, 255, 255), -1);
+            cv::circle(frame, fused.fusedPosition, 5, cv::Scalar(255, 255, 255), -1);
 
-            std::string label = "Fused ID " + std::to_string(fused.id);
+            std::string label = "Fused " + std::to_string(fused.id);
             cv::putText(frame, label,
-                        cv::Point(static_cast<int>(fused.fusedPosition.x) + 8,
-                                  static_cast<int>(fused.fusedPosition.y) + 15),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.5,
-                        cv::Scalar(0, 255, 255), 2);
-
-            if (fused.hasCamera && fused.hasRadar) {
-                cv::line(frame, fused.cameraPosition, fused.radarPosition,
-                         cv::Scalar(255, 255, 255), 1);
-            }
+                        cv::Point(static_cast<int>(fused.fusedPosition.x) + 6,
+                                  static_cast<int>(fused.fusedPosition.y) + 14),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.45,
+                        cv::Scalar(255, 255, 255), 1);
         }
 
         cv::putText(frame,
-                    "Tracks: " + std::to_string(tracks.size()) +
+                    "KF Tracks: " + std::to_string(tracks.size()) +
                     " Radar: " + std::to_string(radarDetections.size()) +
                     " Fused: " + std::to_string(fusedTracks.size()),
                     cv::Point(20, 30),
