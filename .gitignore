@@ -1,0 +1,17 @@
+# Build files
+out/
+build/
+CMakeCache.txt
+CMakeFiles/
+
+# Visual Studio
+.vs/
+*.vcxproj*
+*.sln
+
+# Binaries
+*.exe
+*.dll
+
+# Logs
+*.log
