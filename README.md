@@ -80,6 +80,7 @@ radar-camera-fusion/
 - CMake
 - Visual Studio 2022
 - Ninja build system
+- optional YOLO extension
 
 ## Build Instructions
 ### Prerequisites
