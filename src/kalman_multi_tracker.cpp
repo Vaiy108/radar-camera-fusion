@@ -107,3 +107,39 @@ std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>
     tracks_ = aliveTracks;
     return tracks_;
 }
+void KalmanMultiTracker::updateWithRadar(const std::vector<RadarDetection>& radarDetections) {
+    std::vector<bool> radarMatched(radarDetections.size(), false);
+
+    // Associate each track with the nearest radar detection
+    for (auto& track : tracks_) {
+        float bestDistance = std::numeric_limits<float>::max();
+        int bestRadarIndex = -1;
+
+        for (size_t r = 0; r < radarDetections.size(); ++r) {
+            if (radarMatched[r]) {
+                continue;
+            }
+
+            float dist = distance(track.filteredCenter, radarDetections[r].position);
+            if (dist < bestDistance && dist < maxMatchDistance_) {
+                bestDistance = dist;
+                bestRadarIndex = static_cast<int>(r);
+            }
+        }
+
+        if (bestRadarIndex >= 0) {
+            const auto& rd = radarDetections[bestRadarIndex];
+
+            // EKF radar correction using nonlinear [range, angle]
+            track.kf.updateRadar(rd.range, rd.angle);
+            track.filteredCenter = track.kf.getPosition();
+            track.velocity = track.kf.getVelocity();
+
+            radarMatched[bestRadarIndex] = true;
+        }
+    }
+}
+
+std::vector<KalmanTrack> KalmanMultiTracker::getTracks() const {
+    return tracks_;
+}

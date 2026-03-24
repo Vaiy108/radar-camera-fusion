@@ -1,11 +1,9 @@
 #include "kalman_filter_2d.hpp"
 
 // KalmanFilter2D:
-// Constant-velocity linear Kalman filter with state:
-// [x, y, vx, vy]^T
-//
-// Measurement model:
-// z = [x, y]^T
+// State = [x, y, vx, vy]^T
+// Camera measurement = [x, y]^T
+// Radar measurement = [range, angle]^T (nonlinear EKF update)
 KalmanFilter2D::KalmanFilter2D()
     : initialized_(false) {
     x_ = cv::Mat::zeros(4, 1, CV_32F);
@@ -15,16 +13,21 @@ KalmanFilter2D::KalmanFilter2D()
     H_ = cv::Mat::zeros(2, 4, CV_32F);
     R_ = cv::Mat::eye(2, 2, CV_32F);
     I_ = cv::Mat::eye(4, 4, CV_32F);
+    R_radar_ = cv::Mat::eye(2, 2, CV_32F);
 
     // Measurement matrix:
-    // We directly observe x and y, but not vx or vy.
+    // Camera observes x and y directly, but not vx or vy.
     H_.at<float>(0, 0) = 1.0f;
     H_.at<float>(1, 1) = 1.0f;
 
-    // Measurement noise covariance.
+    // Camera measurement noise - Measurement noise covariance.
     // These values control how much the filter trusts the measurement.
     R_.at<float>(0, 0) = 25.0f;
     R_.at<float>(1, 1) = 25.0f;
+
+    // Radar measurement noise: [range, angle]
+    R_radar_.at<float>(0, 0) = 16.0f;   // range variance
+    R_radar_.at<float>(1, 1) = 0.01f;   // angle variance
 
     // Start with large uncertainty.
     P_ *= 100.0f;
@@ -69,6 +72,7 @@ void KalmanFilter2D::predict(float dt) {
 }
 
 // Measurement update step using a 2D position measurement.
+// Linear camera update using measured image-plane position.
 void KalmanFilter2D::update(const cv::Point2f& measurement) {
     if (!initialized_) {
         init(measurement.x, measurement.y);
@@ -89,6 +93,65 @@ void KalmanFilter2D::update(const cv::Point2f& measurement) {
     // Correct state estimate and covariance
     x_ = x_ + K * y;
     P_ = (I_ - K * H_) * P_;
+}
+
+// EKF radar update using nonlinear measurement:
+// h(x) = [sqrt(px^2 + py^2), atan2(py, px)]
+void KalmanFilter2D::updateRadar(float range, float angle) {
+    if (!initialized_) {
+        // Convert polar to Cartesian for first initialization
+        float px = range * std::cos(angle);
+        float py = range * std::sin(angle);
+        init(px, py);
+        return;
+    }
+
+    float px = x_.at<float>(0, 0);
+    float py = x_.at<float>(1, 0);
+
+    float c1 = px * px + py * py;
+    if (c1 < 1e-4f) {
+        c1 = 1e-4f;
+    }
+
+    float sqrt_c1 = std::sqrt(c1);
+
+    // Predicted nonlinear radar measurement h(x)
+    cv::Mat h = (cv::Mat_<float>(2, 1) <<
+        sqrt_c1,
+        std::atan2(py, px));
+
+    // Actual radar measurement z
+    cv::Mat z = (cv::Mat_<float>(2, 1) << range, angle);
+
+    // Innovation
+    cv::Mat y = z - h;
+    y.at<float>(1, 0) = normalizeAngle(y.at<float>(1, 0));
+
+    // Jacobian Hj = dh/dx
+    cv::Mat Hj = cv::Mat::zeros(2, 4, CV_32F);
+
+    Hj.at<float>(0, 0) = px / sqrt_c1;
+    Hj.at<float>(0, 1) = py / sqrt_c1;
+
+    Hj.at<float>(1, 0) = -py / c1;
+    Hj.at<float>(1, 1) = px / c1;
+
+    cv::Mat S = Hj * P_ * Hj.t() + R_radar_;
+    cv::Mat K = P_ * Hj.t() * S.inv();
+
+    x_ = x_ + K * y;
+    P_ = (I_ - K * Hj) * P_;
+}
+
+float KalmanFilter2D::normalizeAngle(float angle) const {
+    while (angle > static_cast<float>(CV_PI)) {
+        angle -= 2.0f * static_cast<float>(CV_PI);
+    }
+    while (angle < -static_cast<float>(CV_PI)) {
+        angle += 2.0f * static_cast<float>(CV_PI);
+    }
+    return angle;
 }
 
 // Return filtered position estimate.
