@@ -1,3 +1,6 @@
+// 2D constant-velocity Kalman filter.
+// State: [x, y, vx, vy], Measurement: [x, y]
+
 #pragma once
 
 #include <opencv2/core.hpp>

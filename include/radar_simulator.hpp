@@ -1,3 +1,5 @@
+// Generates noisy synthetic radar detections from tracked object positions.
+
 #pragma once
 
 #include <vector>

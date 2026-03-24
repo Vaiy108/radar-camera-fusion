@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 
+// Open a live camera stream by index.
 bool CameraDetector::open(int cameraIndex) {
     cap_.open(cameraIndex);
     if (!cap_.isOpened()) {
@@ -15,6 +16,7 @@ bool CameraDetector::open(int cameraIndex) {
     return true;
 }
 
+// Open a prerecorded video file.
 bool CameraDetector::open(const std::string& videoPath) {
     cap_.open(videoPath);
     if (!cap_.isOpened()) {
@@ -24,6 +26,13 @@ bool CameraDetector::open(const std::string& videoPath) {
     return true;
 }
 
+// Main demo loop:
+// 1. capture frame
+// 2. detect motion
+// 3. track objects with Kalman filtering
+// 4. simulate radar detections
+// 5. fuse camera and radar positions
+// 6. visualize all intermediate outputs
 void CameraDetector::runDemo() {
     if (!cap_.isOpened()) {
         std::cerr << "Capture is not opened!" << std::endl;
@@ -46,8 +55,8 @@ void CameraDetector::runDemo() {
         auto detections = detector.detect(frame);
         auto tracks = tracker.update(detections, 1.0f);
 
-
-        // Convert KalmanTrack -> Track for current fusion code
+        // Convert KalmanTrack objects to simpler Track objects
+        // for the current radar simulation and fusion modules.
         std::vector<Track> basicTracks;
         basicTracks.reserve(tracks.size());
 
@@ -64,20 +73,22 @@ void CameraDetector::runDemo() {
         auto radarDetections = radarSimulator.simulate(basicTracks);
         auto fusedTracks = fusionManager.fuse(basicTracks, radarDetections);
 
-        // Draw Kalman camera tracks
+        // Draw Kalman-based camera tracks.
         for (const auto& track : tracks) {
-            if (track.age < 5)
+            // Suppress very young tracks to avoid visual clutter from unstable IDs.
+            if (track.age < 5) {
                 continue;
-            
+            }
+
             cv::rectangle(frame, track.bbox, cv::Scalar(0, 255, 0), 2);
 
-            // Raw measurement in green
+            // Raw camera measurement
             cv::circle(frame, track.measuredCenter, 4, cv::Scalar(0, 255, 0), -1);
 
-            // Filtered position in yellow
+            // Kalman filtered state estimate
             cv::circle(frame, track.filteredCenter, 6, cv::Scalar(0, 255, 255), -1);
 
-            // Velocity vector in magenta
+            // Estimated velocity vector
             cv::Point2f endPoint = track.filteredCenter + track.velocity * 2.0f;
             cv::line(frame, track.filteredCenter, endPoint, cv::Scalar(255, 0, 255), 2);
 
@@ -86,16 +97,9 @@ void CameraDetector::runDemo() {
                         cv::Point(track.bbox.x, track.bbox.y - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.6,
                         cv::Scalar(0, 255, 0), 2);
-
-            std::string meta = "vx=" + std::to_string(static_cast<int>(track.velocity.x)) +
-                               " vy=" + std::to_string(static_cast<int>(track.velocity.y));
-            cv::putText(frame, meta,
-                        cv::Point(track.bbox.x, track.bbox.y + track.bbox.height + 18),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.45,
-                        cv::Scalar(255, 255, 0), 1);
         }
 
-        // Draw radar detections
+        // Draw radar detections.
         for (const auto& rd : radarDetections) {
             cv::circle(frame, rd.position, 6, cv::Scalar(255, 0, 0), 2);
             cv::putText(frame, "Radar",
@@ -105,7 +109,7 @@ void CameraDetector::runDemo() {
                         cv::Scalar(255, 0, 0), 1);
         }
 
-        // Draw fused points
+        // Draw fused positions.
         for (const auto& fused : fusedTracks) {
             cv::circle(frame, fused.fusedPosition, 5, cv::Scalar(255, 255, 255), -1);
 

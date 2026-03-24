@@ -2,6 +2,10 @@
 #include <cmath>
 #include <limits>
 
+// KalmanMultiTracker:
+// Maintains multiple tracks, each with its own Kalman filter.
+// Uses greedy nearest-neighbor association between predicted tracks
+// and current detections.
 KalmanMultiTracker::KalmanMultiTracker(float maxMatchDistance, int maxMissedFrames)
     : maxMatchDistance_(maxMatchDistance),
       maxMissedFrames_(maxMissedFrames),
@@ -15,7 +19,7 @@ float KalmanMultiTracker::distance(const cv::Point2f& a, const cv::Point2f& b) c
 }
 
 std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>& detections, float dt) {
-    // Predict all tracks first
+    // First predict all existing tracks forward in time.
     for (auto& track : tracks_) {
         track.kf.predict(dt);
         track.filteredCenter = track.kf.getPosition();
@@ -25,7 +29,8 @@ std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>
     std::vector<bool> detectionMatched(detections.size(), false);
     std::vector<bool> trackMatched(tracks_.size(), false);
 
-    // Greedy nearest-neighbor matching using predicted positions
+    // Greedy nearest-neighbor association:
+    // match each predicted track to the closest unmatched detection.
     for (size_t t = 0; t < tracks_.size(); ++t) {
         float bestDistance = std::numeric_limits<float>::max();
         int bestDetectionIndex = -1;
@@ -47,9 +52,12 @@ std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>
 
             tracks_[t].bbox = det.bbox;
             tracks_[t].measuredCenter = det.center;
+
+            // Update the Kalman filter using the matched measurement.
             tracks_[t].kf.update(det.center);
             tracks_[t].filteredCenter = tracks_[t].kf.getPosition();
             tracks_[t].velocity = tracks_[t].kf.getVelocity();
+
             tracks_[t].age += 1;
             tracks_[t].missedFrames = 0;
 
@@ -58,7 +66,7 @@ std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>
         }
     }
 
-    // Unmatched tracks
+    // Tracks without a match are kept alive temporarily.
     for (size_t t = 0; t < tracks_.size(); ++t) {
         if (!trackMatched[t]) {
             tracks_[t].age += 1;
@@ -68,7 +76,7 @@ std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>
         }
     }
 
-    // New tracks
+    // Create new tracks for unmatched detections.
     for (size_t d = 0; d < detections.size(); ++d) {
         if (!detectionMatched[d]) {
             KalmanTrack track;
@@ -86,7 +94,7 @@ std::vector<KalmanTrack> KalmanMultiTracker::update(const std::vector<Detection>
         }
     }
 
-    // Remove stale tracks
+    // Remove tracks that have been unmatched for too long.
     std::vector<KalmanTrack> aliveTracks;
     aliveTracks.reserve(tracks_.size());
 

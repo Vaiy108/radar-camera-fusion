@@ -1,3 +1,5 @@
+// Associates camera tracks with radar detections and computes fused positions.
+
 #pragma once
 
 #include <vector>

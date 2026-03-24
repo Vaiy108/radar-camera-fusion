@@ -2,6 +2,9 @@
 #include <cmath>
 #include <limits>
 
+// FusionManager:
+// Associates radar detections with camera tracks and computes a simple
+// weighted fused position estimate.
 FusionManager::FusionManager(float maxAssociationDistance,
                              float cameraWeight,
                              float radarWeight)
@@ -21,6 +24,7 @@ std::vector<FusedTrack> FusionManager::fuse(const std::vector<Track>& cameraTrac
     std::vector<FusedTrack> fusedTracks;
     std::vector<bool> radarUsed(radarDetections.size(), false);
 
+    // For each camera track, find the nearest available radar detection.
     for (const auto& camTrack : cameraTracks) {
         float bestDistance = std::numeric_limits<float>::max();
         int bestRadarIndex = -1;
@@ -48,6 +52,7 @@ std::vector<FusedTrack> FusionManager::fuse(const std::vector<Track>& cameraTrac
             fused.radarPosition = radarDetections[bestRadarIndex].position;
             fused.hasRadar = true;
 
+            // Weighted average fusion in Cartesian coordinates.
             fused.fusedPosition.x =
                 cameraWeight_ * fused.cameraPosition.x +
                 radarWeight_ * fused.radarPosition.x;
@@ -56,6 +61,7 @@ std::vector<FusedTrack> FusionManager::fuse(const std::vector<Track>& cameraTrac
                 cameraWeight_ * fused.cameraPosition.y +
                 radarWeight_ * fused.radarPosition.y;
         } else {
+            // If radar is unavailable, fall back to camera position.
             fused.fusedPosition = fused.cameraPosition;
         }
 
