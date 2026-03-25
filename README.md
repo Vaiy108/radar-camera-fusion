@@ -74,7 +74,7 @@ radar-camera-fusion/
     └── simple_tracker.cpp
 ```
 
-## Technologies Used
+## Tech Stack
 - C++17
 - OpenCV 4.x
 - CMake
@@ -170,7 +170,7 @@ Planned upgrades include:
 - export results and performance metrics
 - optimize for higher frame rates
 
-## Why This Project Matters
+## Why This Project Matters / 🧩 Skills Demonstrated
 
 This project is intended as a practical demonstration of skills relevant to:
 - algorithm engineering
@@ -178,3 +178,18 @@ This project is intended as a practical demonstration of skills relevant to:
 - real-time tracking
 - radar-camera fusion
 - embedded vision / edge AI pipelines
+
+
+## 👤 Author
+
+**Vasan Iyer**  
+Sensor Fusion / Autonomous Systems Engineer  
+
+Focus areas:
+- Sensor fusion & state estimation  
+- Autonomous systems  
+- Flight dynamics & control  
+- Embedded systems (C++, Python)  
+- UAV systems & simulation  
+
+GitHub: https://github.com/Vaiy108
