@@ -9,7 +9,7 @@
 
 class RadarSimulator {
 public:
-    RadarSimulator(float positionNoiseStd = 8.0f);
+    RadarSimulator(float positionNoiseStd = 4.0f);
 
     std::vector<RadarDetection> simulate(const std::vector<Track>& tracks);
 

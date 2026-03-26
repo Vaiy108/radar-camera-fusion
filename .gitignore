@@ -4,6 +4,11 @@ build/
 CMakeCache.txt
 CMakeFiles/
 
+# Ignore data and videos
+data/
+*.mp4
+*.avi
+
 # Visual Studio
 .vs/
 *.vcxproj*

@@ -9,11 +9,21 @@ int main() {
 
     CameraDetector detector;
 
-    // Open the default camera. Replace with detector.open("video.mp4")
-    // if you want to test on prerecorded footage.
-    if (!detector.open(0)) {
+    // Choose input source here:
+    // Option 1: webcam
+    // if (!detector.open(0)) {
+    //     return -1;
+    // }
+
+    // Option 2: traffic video for multi-object fusion
+    if (!detector.open("C:/Projects_sf/radar-camera-fusion/data/traffic.mp4")) {
         return -1;
     }
+
+    // Option 3: race car video for CSRT single-object tracking
+    // if (!detector.open("C:/Projects_sf/radar-camera-fusion/data/racecar.mp4")) {
+    //     return -1;
+    // }
 
     detector.runDemo();
 

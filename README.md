@@ -1,12 +1,17 @@
-# Radar-Camera Fusion Tracker
+# Real-Time Radar-Camera Fusion Tracker
 
-A real-time C++ prototype for camera-based motion detection, multi-object tracking, Kalman filtering, simulated radar measurements, and basic camera-radar fusion visualization.
+A real-time C++ system for multi-object tracking and sensor fusion using camera-based motion detections, Kalman filtering, simulated radar measurements, and basic camera-radar fusion visualization and EKF-based radar updates.
 
 ## Overview
 
-This project was built as a portfolio prototype for algorithm engineering roles in computer vision, tracking, and sensor fusion.
+This project implements a complete perception pipeline combining:
 
-The system processes live video input, detects moving objects, tracks them across frames, estimates object states with a constant-velocity Kalman filter, simulates radar detections, and fuses radar and camera information into a combined visualization.
+- Camera-based object detection
+- Multi-object tracking using Kalman filters
+- Radar simulation and EKF-based fusion
+- Real-time visualization with velocity estimation
+
+The system is designed to mimic a simplified **traffic monitoring / autonomous driving perception stack**. The system processes live video input, detects moving objects, tracks them across frames, estimates object states with a constant-velocity Kalman filter, simulates radar detections, and fuses radar and camera information into a combined visualization.
 
 The project is designed to demonstrate practical skills in:
 
@@ -17,41 +22,87 @@ The project is designed to demonstrate practical skills in:
 - sensor fusion
 - modular project structure with CMake
 
-## Features
+---
 
-- Real-time webcam or video input
-- Motion-based object detection using background subtraction
-- Detection filtering to reduce noise and false positives
-- Multi-object tracking with persistent track IDs
+## Demo
+
+### Multi-Object Tracking + Sensor Fusion
+
+![Fusion Demo 1](images/demo1.png)
+![Fusion Demo 2](images/demo2.png)  
+
+Visualization Legend
+- Vehicles are tracked with persistent IDs. 
+- Green box: tracked object bounding box
+- Green point: measured camera position
+- Yellow point: Kalman filtered (EKF) position
+- Magenta line: estimated velocity direction
+- Blue point: simulated radar detection / radar measurements
+- White point: fused camera-radar estimate
+
+## Features / What I Implemented
+
+- Real-time multi-object tracking in C++ with persistent track IDs
 - Constant-velocity Kalman filter for state estimation
+- EKF radar update (range + angle)
+- Camera-radar data association and fused position visualization
+- Detection filtering to reduce noise and false positives and track stabilization
+- Velocity estimation and visualization
 - Simulated radar detections with noise
-- Camera-radar association and fused position visualization
 - Modular C++ codebase organized with headers and source files
-- Built using CMake and Visual Studio 2022 on Windows
+- Built using CMake and Visual Studio 2026 on Windows
 
-## Current Pipeline
+## Pipeline
 
-The current processing pipeline is:
+```text
+Camera Frame
+   ↓
+Object Detection (Motion / optional YOLO)
+   ↓
+Data Association
+   ↓
+Kalman Filter (Prediction + Update)
+   ↓
+Radar Simulation
+   ↓
+EKF Radar Correction
+   ↓
+Final Fused Tracks
+```
+## Key Features
+- Motion-based object detection (fast, CPU-friendly)
+- Persistent tracking IDs across frames
+- Constant-velocity motion model
+- Radar-camera fusion using EKF
+- Simulated radar measurements
+- Real-time performance using OpenCV
 
-1. Capture frame from camera
-2. Detect moving objects using background subtraction
-3. Extract object bounding boxes and centers
-4. Track detections across frames
-5. Predict and update object state using a Kalman filter
-6. Simulate radar detections from tracked object positions
-7. Associate radar detections with camera tracks
-8. Compute fused object positions
-9. Visualize camera, radar, and fused outputs
+## Tech Stack
+- C++17
+- OpenCV 4.x
+- CMake
+- Visual Studio 2026
+- Ninja build system
+- optional YOLO extension
 
-## Project Structure
+## 📁 Project Structure
 
 ```text
 radar-camera-fusion/
-├── CMakeLists.txt
-├── CMakeSettings.json
-├── README.md
+├── src/
+│   ├── camera_detector.cpp
+│   ├── csrt_tracker.cpp
+│   ├── fusion_manager.cpp
+│   ├── kalman_filter_2d.cpp
+│   ├── kalman_multi_tracker.cpp
+│   ├── main.cpp
+│   ├── motion_detector.cpp
+│   ├── radar_simulator.cpp
+│   ├── simple_tracker.cpp
+│   └── yolo_detector.cpp
 ├── include/
 │   ├── camera_detector.hpp
+│   ├── csrt_tracker.hpp
 │   ├── detection_types.hpp
 │   ├── fusion_manager.hpp
 │   ├── fusion_types.hpp
@@ -62,30 +113,29 @@ radar-camera-fusion/
 │   ├── radar_simulator.hpp
 │   ├── radar_types.hpp
 │   ├── simple_tracker.hpp
-│   └── track_types.hpp
-└── src/
-    ├── camera_detector.cpp
-    ├── fusion_manager.cpp
-    ├── kalman_filter_2d.cpp
-    ├── kalman_multi_tracker.cpp
-    ├── main.cpp
-    ├── motion_detector.cpp
-    ├── radar_simulator.cpp
-    └── simple_tracker.cpp
+│   ├── track_types.hpp
+│   └── yolo_detector.hpp
+├── images/
+│   ├── demo1.png
+│   └── demo2.png
+├── data/                  # ignored from Git
+├── models/                # ignored or optional
+├── CMakeLists.txt
+├── CMakeSettings.json
+├── .gitignore
+└── README.md
 ```
 
-## Tech Stack
-- C++17
-- OpenCV 4.x
-- CMake
-- Visual Studio 2022
-- Ninja build system
-- optional YOLO extension
+> Note: CSRT single-object tracking files are included for future extension,
+> but the default working demo currently uses the multi-object fusion pipeline.
+> Note: YOLO support is optional. Model files are not included in the repository.
+
 
 ## Build Instructions
+
 ### Prerequisites
 - Windows 10 or later
-- Visual Studio 2022 with Desktop development with C++
+- Visual Studio 2026 with Desktop development with C++
 - OpenCV extracted locally, for example:
 ```
 C:\opencv
@@ -102,7 +152,7 @@ set(OpenCV_DIR "C:/opencv/build/x64/vc16/lib")
 find_package(OpenCV REQUIRED CONFIG)
 ```
 ## Build
-Open the project folder in Visual Studio 2026
+Open the project folder in Visual Studio 2026  
 Run:
 ```
 Project → Configure Cache
@@ -118,16 +168,15 @@ detector.open(0);
 ```
 To use a video file instead, replace it with:
 ```
-detector.open("path/to/video.mp4");
+detector.open("path/to/video_name.mp4");
 ```
-## Visualization Legend
-- Green box: tracked object bounding box
-- Green point: measured camera position
-- Yellow point: Kalman filtered position
-- Magenta line: estimated velocity direction
-- Blue point: simulated radar detection
-- White point: fused camera-radar estimate
 
+## Engineering Decisions
+- Used motion detection for real-time CPU performance
+- Limited number of detections per frame to stabilize tracking
+- Applied track age filtering to remove unstable tracks
+- Simulated radar instead of requiring hardware
+- Used EKF for nonlinear radar measurements
 
 ## Example Output
 
@@ -163,11 +212,13 @@ This is a prototype and has several limitations:
 Planned upgrades include:
 
 - replace motion detection with YOLO or another object detector
-- implement Hungarian assignment for more robust track matching
+- implement Hungarian assignment for more robust track matching (for better association)
 - extend radar model to range, angle, and radial velocity
 - implement EKF-based radar update
 - improve multi-target robustness when objects cross paths
+- Add CSRT / deep tracker for single-object mode
 - export results and performance metrics
+- GPU acceleration (CUDA)
 - optimize for higher frame rates
 
 ## Why This Project Matters / 🧩 Skills Demonstrated
@@ -178,7 +229,6 @@ This project is intended as a practical demonstration of skills relevant to:
 - real-time tracking
 - radar-camera fusion
 - embedded vision / edge AI pipelines
-
 
 ## 👤 Author
 
@@ -192,4 +242,6 @@ Focus areas:
 - Embedded systems (C++, Python)  
 - UAV systems & simulation  
 
+
 GitHub: https://github.com/Vaiy108
+

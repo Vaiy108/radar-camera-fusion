@@ -11,6 +11,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS src/*.cpp)
+list(FILTER SRC_FILES EXCLUDE REGEX ".*csrt_tracker\\.cpp$")
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 

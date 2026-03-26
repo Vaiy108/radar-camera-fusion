@@ -6,7 +6,7 @@
 // then extracts bounding boxes and centers for candidate objects.
 MotionDetector::MotionDetector()
     : bgSubtractor_(cv::createBackgroundSubtractorMOG2()),
-      minArea_(2000) {
+      minArea_(4000) {
 }
 
 // Detect moving objects in the current frame.
@@ -47,7 +47,7 @@ std::vector<Detection> MotionDetector::detect(const cv::Mat& frame) {
         cv::Rect bbox = cv::boundingRect(contour);
 
         // Filter very small bounding boxes that are usually noise.
-        if (bbox.width < 30 || bbox.height < 30) {
+        if (bbox.width < 50 || bbox.height < 40) {
             continue;
         }
 
