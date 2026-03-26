@@ -28,7 +28,7 @@ The project is designed to demonstrate practical skills in:
 Tracking multiple vehicles with EKF-based camera-radar fusion.
 
 <p align="center">
-<img src="images/fusion_demo.gif" width="600"/> 
+<img src="images/fusion_demo1.gif" width="600"/> 
 </p>
 
 <p align="center">
