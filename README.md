@@ -28,8 +28,10 @@ The project is designed to demonstrate practical skills in:
 
 ### Multi-Object Tracking + Sensor Fusion
 
-![Fusion Demo 1](images/demo1.png)
-![Fusion Demo 2](images/demo2.png)  
+<p align="center">
+<img src="images/demo1.png" width="350"/> + <img src="images/demo2.png" width="350"/> 
+</p>
+
 
 Visualization Legend
 - Vehicles are tracked with persistent IDs. 
