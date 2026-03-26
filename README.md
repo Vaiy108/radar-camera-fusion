@@ -29,7 +29,7 @@ The project is designed to demonstrate practical skills in:
 ### Multi-Object Tracking + Sensor Fusion
 
 <p align="center">
-<img src="images/demo1.png" width="350"/> + <img src="images/demo2.png" width="350"/> 
+<img src="images/demo1.png" width="350"/>     <img src="images/demo2.png" width="350"/> 
 </p>
 
 
