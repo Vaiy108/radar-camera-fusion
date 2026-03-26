@@ -32,7 +32,7 @@ Tracking multiple vehicles with EKF-based camera-radar fusion.
 </p>
 
 <p align="center">
-<img src="images/demo1.png" width="300"/>     <img src="images/demo2.png" width="250"/> 
+<img src="images/demo1.png" width="300"/>     <img src="images/demo2.png" width="260"/> 
 </p>
 
 
